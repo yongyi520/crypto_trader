@@ -56,12 +56,24 @@ export default class BitfinexTesting extends Component {
         Meteor.call("bitfinex.isSocketAlive");
     }
 
-    initialSellETH(){
+    initialSellETHUSD(){
         Meteor.call("bitfinex.initialSell", 'ethusd');
     }
 
-    initialSellOMG(){
+    initialSellOMGUSD(){
         Meteor.call("bitfinex.initialSell", 'omgusd');
+    }
+
+    initialSellOMGBTC(){
+        Meteor.call("bitfinex.initialSell", 'omgbtc');
+    }
+
+    initialSellNEOUSD(){
+        Meteor.call("bitfinex.initialSell", 'neousd');
+    }
+
+    initialSellNEOBTC(){
+        Meteor.call("bitfinex.initialSell", 'neobtc');
     }
 
     wssListenerSetup(){
@@ -146,8 +158,11 @@ export default class BitfinexTesting extends Component {
                         </div>
                         <div className="panel">
                             <h4>Martingale Algorithm Test</h4>
-                            <button onClick={this.initialSellETH.bind(this)}>Initial Sell ETH</button>
-                            <button onClick={this.initialSellOMG.bind(this)}>Initial Sell OMG</button>
+                            <button onClick={this.initialSellETHUSD.bind(this)}>Initial Sell ETHUSD</button>
+                            <button onClick={this.initialSellOMGUSD.bind(this)}>Initial Sell OMGUSD</button>
+                            <button onClick={this.initialSellOMGBTC.bind(this)}>Initial Sell OMGBTC</button>
+                            <button onClick={this.initialSellNEOUSD.bind(this)}>Initial Sell NEOUSD</button>
+                            <button onClick={this.initialSellNEOBTC.bind(this)}>Initial Sell NEOBTC</button>
                             <button onClick={this.wssListenerSetup.bind(this)}>Wss Listener Setup</button>
                         </div>
                         <div className="panel">

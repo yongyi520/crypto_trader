@@ -21,7 +21,8 @@ var AlgorithmSettingsStartupData = [
         is_active: false,
         step_size: 0.02,
         buy_back: .99,
-        start_amount: 0.1
+        start_amount: 0.1,
+        max_margin_amount: 660
     },
     {
         name: "martingale",
@@ -29,9 +30,43 @@ var AlgorithmSettingsStartupData = [
         exchange: "bitfinex",
         symbol: "omgusd",
         is_active: false,
-        step_size: 0.03,
+        step_size: 0.015,
         buy_back: .99,
-        start_amount: 0.1
+        start_amount: 16.5,
+        max_margin_amount: 12500
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "omgbtc",
+        is_active: false,
+        step_size: 0.02,
+        buy_back: .99,
+        start_amount: 16.5,
+        max_margin_amount: 12500
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "neobtc",
+        is_active: false,
+        step_size: 0.02,
+        buy_back: .99,
+        start_amount: 0.1,
+        max_margin_amount: 3000
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "neousd",
+        is_active: false,
+        step_size: 0.02,
+        buy_back: .99,
+        start_amount: 0.1,
+        max_margin_amount: 3000
     }
 ]
 
@@ -73,7 +108,8 @@ AlgorithmSettingsStartupData.forEach( (data) => {
         is_active: data.is_active,
         step_size: data.step_size ? data.step_size : null,
         buy_back: data.buy_back ? data.buy_back : null,
-        start_amount: data.start_amount ? data.start_amount : null
+        start_amount: data.start_amount ? data.start_amount : null,
+        max_margin_amount: data.max_margin_amount ? data.max_margin_amount : null
     }
 
     var algorithmSettingData = AlgorithmSettings.findOne(algorithmSettingFindCriteria)

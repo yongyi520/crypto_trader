@@ -8,6 +8,7 @@ import { getWebsocketClient, openSocket, restartWebsocketClient,
     getWssOnOpenFunction } from '/imports/api/bitfinex/wss.js';
 
 import { resyncMartingaleSHBLBitfinex, initialSellFunction, wssOrderListenerMartingaleSHBLFunction, martingaleRunCreateNextOrders } from '/imports/api/bitfinex/algorithm/martingale/sell-high-buy-low/bitfinex-martingale-SHBL.js';
+
 import { insertErrorLogNoFiber, insertUpdateLogNoFiber, insertErrorLogFiber } from '/imports/api/system-logs/systemLogs-update.js';
 import { parseApiWallet, parseApiActivePositions } from '/imports/api/bitfinex/lib/parseResponse/api/apiResponseParser.js';
 
@@ -27,6 +28,52 @@ Meteor.methods({
 
 // wss
 Meteor.methods({
+    "bitfinex.newOpenSocket": function(){
+        var messageListener = (data) => {
+            // console.log( data );
+            if(data.length >= 3 && data[1] != "hb"){
+                console.log( "type", data[1]);
+                console.log( "detail", data[2])
+            }
+        };
+
+        var pingPongListener = (data) => {
+            if(data.event == 'pong')
+                keepAlive();
+        }
+
+        var onOpenFunction = () => {
+            websocketAddMessageListener( messageListener );
+            websocketAddMessageListener( pingPongListener );
+            websocketAddMessageListener( wssOrderListenerMartingaleSHBLFunction);
+            setTimeout( () => resyncMartingaleSHBLBitfinex(), 1000);
+        };
+
+        if(getWssOnOpenFunction() == null){
+            openSocket( onOpenFunction );
+            SyncedCron.add({
+                name: 'bitfinex.wssPing',
+                schedule: function(parser){
+                    return parser.text('every 5 minutes');
+                },
+                job: function(){
+                    ping();
+                    setTimeout(() => {
+                        if(!isSocketAlive()){
+                            console.log("bitfinex wss connection dead, restart websocket");
+                            insertErrorLogFiber("server", "bitfinex", "server", "bitfinex connection dead, restarting server in 30 seconds");
+                            restartWebsocketClient();
+                        } else
+                            console.log("bitfinex wss connection ping/pong successful")
+                    }, 5000)
+                }
+            })
+            SyncedCron.start();
+        } else {
+            console.log("socket already open")
+            restartWebsocketClient();
+        }
+    },
     "bitfinex.openSocket": function(){
         var messageListener = (data) => {
             // console.log( data );

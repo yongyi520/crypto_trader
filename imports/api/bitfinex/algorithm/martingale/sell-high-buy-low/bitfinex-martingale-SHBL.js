@@ -95,7 +95,7 @@ export const resyncMartingaleSHBLBitfinex = function(){
                 };
 
                 var handleErrorFunction = apiErrorResponse => {
-                    if(apiErrorResponse.message.includes('Nonce is too small') || _.isEmpty(apiErrorResponse)){
+                    if(apiErrorResponse.message.includes('Nonce is too small') || apiErrorResponse){
                         console.log("nouse too small, get order status, retry");
                         insertErrorLogFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol, "resync get order status error: " + JSON.stringify(apiErrorResponse));
                         setTimeout(() => getMyOrderStatus({order_id: order.order_id}).then( updateOrderStatusFunction ).catch( handleErrorFunction ), 1000);
@@ -473,17 +473,17 @@ export const martingaleRunCreateNextOrders = function(parsedWssExecutedOrderDeta
 
         insertUpdateLogNoFiber(algorithm._id, 'bitfinex', parsedWssExecutedOrderDetail.symbol,
             "Creating Martingale Next Step Orders. Sell Order: " + sell_order_params.amount + "@ $" + sell_order_params.price + ". Buy Order: " + buy_order_params.amount + "@ $" + buy_order_params.price);
-        executeNextMargingaleOrders(sell_order_params, buy_order_params, algorithm._id, algorithmRun);
+        executeNextMargingaleOrders(sell_order_params, buy_order_params, algorithm._id, algorithmRun, algorithmSetting);
 
     }
 
 }.future()
 
-const executeNextMargingaleOrders = function(sellOrderParams, buyOrderParams, algorithmId, algorithmRun){
+const executeNextMargingaleOrders = function(sellOrderParams, buyOrderParams, algorithmId, algorithmRun, algorithmSetting){
     if(sellOrderParams.type == 'exchange limit'){
-        exchangeNextMartingaleOrder(sellOrderParams, buyOrderParams, algorithmId, algorithmRun);
+        exchangeNextMartingaleOrder(sellOrderParams, buyOrderParams, algorithmId, algorithmRun, algorithmSetting);
     } else if (sellOrderParams.type == 'limit'){
-        marginNextMartingaleOrder(sellOrderParams, buyOrderParams, algorithmId, algorithmRun);
+        marginNextMartingaleOrder(sellOrderParams, buyOrderParams, algorithmId, algorithmRun, algorithmSetting);
     }
 
 }
@@ -562,14 +562,14 @@ const exchangeNextMartingaleOrder = function(sellOrderParams, buyOrderParams, al
     var getBalanceErrorHandlingFunction = (apiErrorMessage) => {
         insertErrorLogFiber(algorithmId, "bitfinex", sellOrderParams.symbol, "Martingale next step getBalance error: " + JSON.stringify(apiErrorMessage))
         if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
-            setTimeout(() => getWalletBalances().then( nextStepOrdersFunction ).catch( getBalanceErrorHandlingFunction ), 1000);
+            setTimeout(() => getWalletBalances().then( nextStepOrdersFunction ).catch( getBalanceErrorHandlingFunction ), 2000);
         }
     }
 
     setTimeout(() => getWalletBalances().then( nextStepOrdersFunction ).catch( getBalanceErrorHandlingFunction ), 2000);
 }
 
-const marginNextMartingaleOrder = function(sellOrderParams, buyOrderParams, algorithmId, algorithmRun){
+const marginNextMartingaleOrder = function(sellOrderParams, buyOrderParams, algorithmId, algorithmRun, algorithmSetting){
     var nextStepOrdersFunction = (walletApiResponse) =>{
 
         var parsedApiWallets = parseApiWallet(walletApiResponse);
@@ -580,7 +580,7 @@ const marginNextMartingaleOrder = function(sellOrderParams, buyOrderParams, algo
         var sellCurrencyBalance = getMarginCurrencyBalanceFromWallets(parsedApiWallets, sellOrderCurrency);
 
         // // if wallet has enough eth balance
-        if(hasEnoughSellMarginBalance(sellCurrencyBalance, sellOrderParams, algorithmRun)){
+        if(hasEnoughSellMarginBalance(sellCurrencyBalance, sellOrderParams, algorithmRun, algorithmSetting)){
             insertUpdateLogNoFiber(algorithmId, 'bitfinex', sellOrderParams.symbol,
                 "Has Enough Balance for Sell Order: " + sellOrderParams.amount + "@ $" + sellOrderParams.price);
             insertUpdateLogNoFiber(algorithmId, 'bitfinex', sellOrderParams.symbol,
@@ -623,7 +623,7 @@ const marginNextMartingaleOrder = function(sellOrderParams, buyOrderParams, algo
         console.log("parsed api wallet", parsedApiWallets);
         console.log("sell order currency", sellOrderCurrency);
         console.log("sell order wallet", sellCurrencyBalance);
-        console.log("has enough sell balance", hasEnoughSellMarginBalance(sellCurrencyBalance, sellOrderParams, algorithmRun));
+        console.log("has enough sell balance", hasEnoughSellMarginBalance(sellCurrencyBalance, sellOrderParams, algorithmRun, algorithmSetting));
         console.log("buy order currency", buyOrderCurrency);
     }
 
@@ -644,8 +644,8 @@ const getMarginCurrencyBalanceFromWallets = function(parsedApiWallets, currency)
     })
 }
 
-const hasEnoughSellMarginBalance = function(sellCurrencyBalance, sellOrderParams, algorithmRun){
-    var maxMarginAmount = sellCurrencyBalance.amount * 3.3;
+const hasEnoughSellMarginBalance = function(sellCurrencyBalance, sellOrderParams, algorithmRun, algorithmSetting){
+    var maxMarginAmount = algorithmSetting.max_margin_amount;
     var requiredSellAmount = parseFloat(sellOrderParams.amount) + algorithmRun.amount_remaining;
     console.log("checking sell margin balance");
     console.log("algorithm Run", algorithmRun);

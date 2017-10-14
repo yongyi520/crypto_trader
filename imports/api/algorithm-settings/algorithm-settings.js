@@ -23,7 +23,17 @@ AlgorithmSettingsSchema = new SimpleSchema({
         decimal: true,
         optional: true
     },
+    reset_size: {
+        type: Number,
+        decimal: true,
+        optional: true
+    },
     start_amount: {
+        type: Number,
+        decimal: true,
+        optional: true
+    },
+    max_margin_amount: {
         type: Number,
         decimal: true,
         optional: true
