@@ -67,6 +67,28 @@ var AlgorithmSettingsStartupData = [
         buy_back: .99,
         start_amount: 0.1,
         max_margin_amount: 3000
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "xrpusd",
+        is_active: false,
+        step_size: 0.02,
+        buy_back: .99,
+        start_amount: 560,
+        max_margin_amount: 410000
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "xrpbtc",
+        is_active: false,
+        step_size: 0.02,
+        buy_back: .99,
+        start_amount: 560,
+        max_margin_amount: 410000
     }
 ]
 
