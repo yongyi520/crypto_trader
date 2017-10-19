@@ -15,3 +15,9 @@ export const activeOrdersWithOrderId = function(order_ids){
         status: 'ACTIVE'
     }).fetch();
 }.future()
+
+export const findOneOrderWithOrderIdNoFiber = function(order_id){
+    return Orders.findOne({
+        order_id: order_id
+    })
+}

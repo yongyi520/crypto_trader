@@ -69,7 +69,7 @@ export const resyncMartingaleBitfinex = function(){
                     var parsedWssStatus = convertApiParsedOrderToWssParsedOrder(parsedOrderStatus);
                     console.log("parsed order status", parsedOrderStatus);
                     console.log("converted to wss", parsedWssStatus);
-                    if (parsedOrderStatus.status == 'EXECUTED' || parsedOrderStatus.remaining_amount == 0){
+                    if (parsedOrderStatus.status == 'EXECUTED' || parsedOrderStatus.remaining_amount <= 0.0001){
                         // convert api order detail to parsedWssOrderDetail
                         insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
                             orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Executed. Continue next step");
@@ -159,7 +159,7 @@ export const wssOrderListenerMartingaleFunction = function(data){
             var parsedWssOrderDetail = parseWssOrder(data[2]);
             console.log("data detail", parsedWssOrderDetail);
 
-            if (parsedWssOrderDetail.status.includes('EXECUTED') || parsedWssOrderDetail.amount == 0){
+            if (parsedWssOrderDetail.status.includes('EXECUTED') || Math.abs(parsedWssOrderDetail.amount) <= 0.0001){
                 console.log("order executed");
                 // console.log("previous wss data", getPreviousWssData());
                 // make sure there's no duplicate data sent from the wss server
@@ -194,17 +194,20 @@ const initialOrderFunction = function(orderBook, symbol, algorithmId){
     var algorithmSetting = AlgorithmSettings.findOne({symbol: symbol, exchange: "bitfinex", algorithm_id: algorithmId});
     var initialPrice = null;
     var side = null;
+    var amount = null;
     if(algorithm.type == "SHBL"){
         initialPrice = parseFloat(orderBook.bids[0].price) * 0.995;
         side = "sell";
+        amount = algorithmSetting.start_amount - (Math.random() * algorithmSetting.start_amount * 0.04);
     } else if (algorithm.type == "BLSH"){
         initialPrice = parseFloat(orderBook.asks[0].price) * 1.005;
         side = "buy";
+        amount = algorithmSetting.start_amount - (Math.random() * algorithmSetting.start_amount * 0.04);
     }
 
     var initialOrderParams = {
         symbol: symbol,
-        amount: algorithmSetting.start_amount.toString(),
+        amount: amount.toString(),
         price: initialPrice.toString(),
         side: side,
         type: "limit",
@@ -410,7 +413,9 @@ const updatePartialOrderThenCancelOrder = function(activeApiOrderStatusResponse,
 
     var errorHandlingFunction = (apiErrorMessage) => {
         insertErrorLogFiber(algorithmRun.algorithm_id, "bitfinex", algorithmRun.symbol, "Cancel Order Error" + JSON.stringify(apiErrorMessage))
-        if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
+        if (apiErrorMessage.message.includes('Order could not be cancelled')){
+            updateCancelOrder(parsedApiOrder.order_id);
+        } else if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
             setTimeout(() => cancelOrder({order_id: parsedApiOrder.order_id}).then( (response) => insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', parsedApiOrder.symbol,
                 parsedApiOrder.side + " Order (" + parsedApiOrder.original_amount + " @" + parsedApiOrder.price + ") Cancelled"))
                 .catch( errorHandlingFunction ), 1000)

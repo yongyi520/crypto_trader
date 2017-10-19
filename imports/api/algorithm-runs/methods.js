@@ -5,6 +5,9 @@ Meteor.methods({
         var allAlgoRuns = AlgorithmRuns.find().fetch();
         console.log("all algorithm runs", allAlgoRuns);
     },
+    "removeNonActiveAlgorithmRuns": function(){
+        AlgorithmRuns.remove({status: {$ne: 'ACTIVE'}})
+    },
     "removeAlgorithmRuns": function(exchange, symbol){
         AlgorithmRuns.remove({exchange: exchange, symbol: symbol})
     },

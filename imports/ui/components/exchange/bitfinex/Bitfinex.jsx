@@ -106,7 +106,7 @@ export class Bitfinex extends Component {
             var algorithm = this.props.algorithms.findOne({name: this.state.algorithmSelect, type: this.state.typeSelect});
             console.log("algorithm", algorithm);
             var algorithmLogCriteria = {
-              algorithm_id: algorithm._id,
+                algorithm_id: algorithm._id,
                 exchange: 'bitfinex',
                 symbol: this.state.symbolSelect
             };
@@ -149,10 +149,10 @@ export class Bitfinex extends Component {
                             <div className="selection">
                                 { this.state.algorithmOptions ?
                                     this.state.algorithmOptions.map( algorithmName => {
-                                    return <span key={algorithmName}
-                                                 onClick={() => this.updateAlgorithmSelect(algorithmName)}
-                                                 className={classNames({selected: this.state.algorithmSelect == algorithmName})}
-                                    >
+                                        return <span key={algorithmName}
+                                                     onClick={() => this.updateAlgorithmSelect(algorithmName)}
+                                                     className={classNames({selected: this.state.algorithmSelect == algorithmName})}
+                                        >
                                         {algorithmName}
                                         </span>
                                     })
@@ -234,10 +234,10 @@ export class Bitfinex extends Component {
 
                             <div className="algorithm-run-orders">
                                 <div className="title">
-                                    Active Orders
+                                    Run Orders
                                 </div>
                                 <div className="orders">
-                                   <AlgorithmRunOrders algorithmRunOrders={this.getAlgorithmRunOrders()}/>
+                                    <AlgorithmRunOrders algorithmRunOrders={this.getAlgorithmRunOrders()}/>
                                 </div>
                             </div>
 

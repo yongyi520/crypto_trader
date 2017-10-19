@@ -1,16 +1,17 @@
 import { getWalletBalances, getMyActiveOrders, getOrderBook, getAllSymbols,
-            getMyOrderStatus, getMyActivePositions,
-            newOrder, replaceOrder, cancelOrder} from '/imports/api/bitfinex/rest.js';
+    getMyOrderStatus, getMyActivePositions,
+    newOrder, replaceOrder, cancelOrder} from '/imports/api/bitfinex/rest.js';
 
 import { getWebsocketClient, openSocket, restartWebsocketClient,
-            websocketAddMessageListener, websocketSubscribeToChannel,
-            ping, keepAlive, isSocketAlive,
+    websocketAddMessageListener, websocketSubscribeToChannel,
+    ping, keepAlive, isSocketAlive,
     getWssOnOpenFunction } from '/imports/api/bitfinex/wss.js';
 
 import { resyncMartingaleSHBLBitfinex, initialSellFunction, wssOrderListenerMartingaleSHBLFunction, martingaleRunCreateNextOrders } from '/imports/api/bitfinex/algorithm/martingale/sell-high-buy-low/bitfinex-martingale-SHBL.js';
-
 import { insertErrorLogNoFiber, insertUpdateLogNoFiber, insertErrorLogFiber } from '/imports/api/system-logs/systemLogs-update.js';
 import { parseApiWallet, parseApiActivePositions } from '/imports/api/bitfinex/lib/parseResponse/api/apiResponseParser.js';
+
+import { findOneOrderWithOrderIdNoFiber } from '/imports/api/orders/orders-search.js';
 
 // algorithm
 Meteor.methods({
@@ -28,52 +29,6 @@ Meteor.methods({
 
 // wss
 Meteor.methods({
-    "bitfinex.newOpenSocket": function(){
-        var messageListener = (data) => {
-            // console.log( data );
-            if(data.length >= 3 && data[1] != "hb"){
-                console.log( "type", data[1]);
-                console.log( "detail", data[2])
-            }
-        };
-
-        var pingPongListener = (data) => {
-            if(data.event == 'pong')
-                keepAlive();
-        }
-
-        var onOpenFunction = () => {
-            websocketAddMessageListener( messageListener );
-            websocketAddMessageListener( pingPongListener );
-            websocketAddMessageListener( wssOrderListenerMartingaleSHBLFunction);
-            setTimeout( () => resyncMartingaleSHBLBitfinex(), 1000);
-        };
-
-        if(getWssOnOpenFunction() == null){
-            openSocket( onOpenFunction );
-            SyncedCron.add({
-                name: 'bitfinex.wssPing',
-                schedule: function(parser){
-                    return parser.text('every 5 minutes');
-                },
-                job: function(){
-                    ping();
-                    setTimeout(() => {
-                        if(!isSocketAlive()){
-                            console.log("bitfinex wss connection dead, restart websocket");
-                            insertErrorLogFiber("server", "bitfinex", "server", "bitfinex connection dead, restarting server in 30 seconds");
-                            restartWebsocketClient();
-                        } else
-                            console.log("bitfinex wss connection ping/pong successful")
-                    }, 5000)
-                }
-            })
-            SyncedCron.start();
-        } else {
-            console.log("socket already open")
-            restartWebsocketClient();
-        }
-    },
     "bitfinex.openSocket": function(){
         var messageListener = (data) => {
             // console.log( data );
@@ -92,7 +47,7 @@ Meteor.methods({
             websocketAddMessageListener( messageListener );
             websocketAddMessageListener( pingPongListener );
             websocketAddMessageListener( wssOrderListenerMartingaleSHBLFunction);
-            setTimeout( () => resyncMartingaleSHBLBitfinex(), 1000);
+            setTimeout( () => resyncMartingaleSHBLBitfinex(), 5000);
         };
 
         if(getWssOnOpenFunction() == null){
@@ -129,6 +84,7 @@ Meteor.methods({
     },
     "bitfinex.isSocketAlive": function(){
         console.log("is socket alive? ", isSocketAlive());
+        return isSocketAlive();
     },
     "bitfinex.restartSocket": function(){
         restartWebsocketClient();
@@ -137,13 +93,25 @@ Meteor.methods({
 
 // martingale fixes
 Meteor.methods({
-    "bitfinex.martingaleNextOrder": function(){
-        var parsedWssDetail = {
-            symbol: "omgusd",
-            average_price: 8.7828,
-            order_id: 4261344819
+    "bitfinex.martingaleNextOrders": function(order_id){
+
+
+        var order = findOneOrderWithOrderIdNoFiber(order_id);
+        console.log("order_id", order_id);
+        console.log("data type", typeof order_id);
+        console.log("order in database", order);
+        if(order){
+            var parsedWssDetail = {
+                symbol: order.symbol,
+                average_price: order.average_executed_price,
+                order_id: order.order_id
+            }
+            console.log("parsed wss detail", parsedWssDetail)
+            martingaleRunCreateNextOrders(parsedWssDetail);
+        } else {
+            console.log("order not found");
         }
-        martingaleRunCreateNextOrders(parsedWssDetail);
+
     }
 })
 
@@ -153,13 +121,13 @@ Meteor.methods({
         getMyActivePositions().then( parseApiActivePositions ).catch( console.log );
     },
     "bitfinex.getOrderBook": function(){
-      console.log("getting order book");
-      // bid is buying, ask is selling
-      // get bid [0] price and put 0.01 price higher than that
-      var symbol = 'ethusd';
-      var params = {limit_bids: 10, limit_asks: 10};
-      getOrderBook(symbol, params).then( console.log )
-          .catch( console.log )
+        console.log("getting order book");
+        // bid is buying, ask is selling
+        // get bid [0] price and put 0.01 price higher than that
+        var symbol = 'ethusd';
+        var params = {limit_bids: 10, limit_asks: 10};
+        getOrderBook(symbol, params).then( console.log )
+            .catch( console.log )
     },
     "bitfinex.getAllSymbols": function(){
         console.log("getting all bitfinex symbols");

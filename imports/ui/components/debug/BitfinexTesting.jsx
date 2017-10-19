@@ -4,6 +4,11 @@ require('/imports/ui/components/debug/BitfinexTesting.sass')
 
 export default class BitfinexTesting extends Component {
 
+    martingaleNextOrders(){
+        var order_id = parseInt(this.refs.orderId.value);
+        Meteor.call("bitfinex.martingaleNextOrders", order_id);
+    }
+
     getWalletBalances(){
         Meteor.call("bitfinex.getWalletBalances");
     }
@@ -53,7 +58,13 @@ export default class BitfinexTesting extends Component {
     }
 
     isSocketAlive(){
-        Meteor.call("bitfinex.isSocketAlive");
+        Meteor.call("bitfinex.isSocketAlive", (error, alive) => {
+            if(alive){
+                alert("the socket is live")
+            } else {
+                alert("the socket is dead")
+            }
+        });
     }
 
     initialSellETHUSD(){
@@ -76,12 +87,24 @@ export default class BitfinexTesting extends Component {
         Meteor.call("bitfinex.initialSell", 'neobtc');
     }
 
+    initialSellXRPUSD(){
+        Meteor.call("bitfinex.initialSell", 'xrpusd');
+    }
+
+    initialSellXRPBTC(){
+        Meteor.call("bitfinex.initialSell", 'xrpbtc');
+    }
+
     wssListenerSetup(){
         Meteor.call("bitfinex.wssListenerSetup");
     }
 
     allOrders(){
         Meteor.call("allOrders");
+    }
+
+    removeNonActiveAlgorithmRunOrders(){
+        Meteor.call("removeNonActiveAlgorithmRunOrders");
     }
 
     resetOrders(){
@@ -112,6 +135,10 @@ export default class BitfinexTesting extends Component {
         Meteor.call("allAlgorithmRuns")
     }
 
+    removeNonActiveAlgorithmRun(){
+        Meteor.call("removeNonActiveAlgorithmRuns");
+    }
+
     removeETHAlgorithmRuns(){
 
     }
@@ -134,6 +161,11 @@ export default class BitfinexTesting extends Component {
                         <h2>Bitfinex Testing</h2>
                     </div>
                     <div className="main-content">
+                        <div className="panel">
+                            <h4>Troubleshoot</h4>
+                            <input ref="orderId" type="number"/>
+                            <button onClick={this.martingaleNextOrders.bind(this)}>Martingale Next Orders</button>
+                        </div>
                         <div className="panel">
                             <h4>API General Calls</h4>
                             <button onClick={this.getWalletBalances.bind(this)}>Wallet Balances</button>
@@ -163,11 +195,14 @@ export default class BitfinexTesting extends Component {
                             <button onClick={this.initialSellOMGBTC.bind(this)}>Initial Sell OMGBTC</button>
                             <button onClick={this.initialSellNEOUSD.bind(this)}>Initial Sell NEOUSD</button>
                             <button onClick={this.initialSellNEOBTC.bind(this)}>Initial Sell NEOBTC</button>
+                            <button onClick={this.initialSellXRPUSD.bind(this)}>Initial Sell XRPUSD</button>
+                            <button onClick={this.initialSellXRPBTC.bind(this)}>Initial Sell XRPBTC</button>
                             <button onClick={this.wssListenerSetup.bind(this)}>Wss Listener Setup</button>
                         </div>
                         <div className="panel">
                             <h4>Orders Collection</h4>
                             <button onClick={this.allOrders.bind(this)}>All Orders</button>
+                            <button onClick={this.removeNonActiveAlgorithmRunOrders.bind(this)}>Remove Non Active Algorithm Run Orders</button>
                             <button onClick={this.resetOrders.bind(this)}>Reset Orders</button>
                         </div>
                         <div className="panel">
@@ -184,6 +219,7 @@ export default class BitfinexTesting extends Component {
                         <div className="panel">
                             <h4>Algorithm Runs Collection</h4>
                             <button onClick={this.allAlgorithmRuns.bind(this)}>All Algorithms Runs</button>
+                            <button onClick={this.removeNonActiveAlgorithmRun.bind(this)}>Remove Non-Active Algorithm Runs</button>
                             <button onClick={this.removeETHAlgorithmRuns.bind(this)}>Remove ETH Algorithm Runs</button>
                             <button onClick={this.removeOMGAlgorithmRuns.bind(this)}>Remove OMG Algorithm Runs</button>
                             <button onClick={this.resetAlgorithmRuns.bind(this)}>Reset Algorithms Runs</button>
