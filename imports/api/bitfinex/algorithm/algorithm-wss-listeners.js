@@ -20,9 +20,9 @@ export const wssOrderListenerFunction = function(data){
             var parsedWssOrderDetail = parseWssOrder(data[2]);
             console.log("data detail", parsedWssOrderDetail);
 
-            if (parsedWssOrderDetail.status.includes('EXECUTED') || parsedWssOrderDetail.amount == 0){
+            if (parsedWssOrderDetail.status.includes('EXECUTED') || Math.abs(parsedWssOrderDetail.amount) <= 0.0001){
                 console.log("order executed");
-                algorithmManager(parsedWssOrderDetail);
+                setTimeout(() => algorithmManager(parsedWssOrderDetail), 4000);
             } else if(parsedWssOrderDetail.status.includes('CANCELED')){
                 console.log("order cancelled");
                 // update canceled order
@@ -36,6 +36,6 @@ const algorithmManager = function(parsedWssOrderDetail){
     var algorithmRun = findActiveAlgorithmRunWithOrderIdNoFiber(parsedWssOrderDetail.order_id);
     var algorithm = Algorithms.findOne({_id: algorithmRun.algorithm_id});
     if (algorithm.name == 'martingale'){ // if order is part of martingale algorithm run
-        martingaleNextStep(parsedWssOrderDetail);
+        martingaleNextStep(parsedWssOrderDetail, algorithm.type);
     }
 }.future()

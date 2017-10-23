@@ -5,8 +5,14 @@ import '/imports/startup/server'
 import { openSocket, restartWebsocketClient, websocketAddMessageListener,
     ping, keepAlive, isSocketAlive,
     getWssOnOpenFunction } from '/imports/api/bitfinex/wss.js';
-import { resyncMartingaleSHBLBitfinex, wssOrderListenerMartingaleSHBLFunction } from '/imports/api/bitfinex/algorithm/martingale/sell-high-buy-low/bitfinex-martingale-SHBL.js';
+
+import { wssOrderListenerFunction } from '/imports/api/bitfinex/algorithm/algorithm-wss-listeners.js';
+import { resyncBitfinexAlgorithms } from '/imports/api/bitfinex/algorithm/algorithm-resync.js';
+// import { resyncMartingaleSHBLBitfinex, wssOrderListenerMartingaleSHBLFunction } from '/imports/api/bitfinex/algorithm/martingale/sell-high-buy-low/bitfinex-martingale-SHBL.js';
+
+
 import {  insertErrorLogFiber } from '/imports/api/system-logs/systemLogs-update.js';
+
 
 Meteor.startup(() => {
     // code to run on server at startup
@@ -32,8 +38,8 @@ const startBitfinexWssSocket = function() {
     var onOpenFunction = () => {
         websocketAddMessageListener( messageListener );
         websocketAddMessageListener( pingPongListener );
-        websocketAddMessageListener( wssOrderListenerMartingaleSHBLFunction);
-        setTimeout( () => resyncMartingaleSHBLBitfinex(), 5000);
+        websocketAddMessageListener( wssOrderListenerFunction );
+        setTimeout( () => resyncBitfinexAlgorithms(), 5000);
     };
 
     if(getWssOnOpenFunction() == null){

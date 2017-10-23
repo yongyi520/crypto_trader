@@ -1,5 +1,7 @@
 import { resyncMartingaleBitfinex } from '/imports/api/bitfinex/algorithm/martingale/martingale-bitfinex.js';
 
-export const resyncMartingale = function(){
+import Future from 'fibers/future';
+
+export const resyncBitfinexAlgorithms = function(){
     resyncMartingaleBitfinex();
-}
+}.future()

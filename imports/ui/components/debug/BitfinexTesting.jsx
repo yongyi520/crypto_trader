@@ -68,31 +68,67 @@ export default class BitfinexTesting extends Component {
     }
 
     initialSellETHUSD(){
-        Meteor.call("bitfinex.initialSell", 'ethusd');
+        Meteor.call("bitfinex.martingaleSHBL", 'ethusd');
+    }
+
+    initialSellETHBTC(){
+        Meteor.call("bitfinex.martingaleSHBL", 'ethbtc');
     }
 
     initialSellOMGUSD(){
-        Meteor.call("bitfinex.initialSell", 'omgusd');
+        Meteor.call("bitfinex.martingaleSHBL", 'omgusd');
     }
 
     initialSellOMGBTC(){
-        Meteor.call("bitfinex.initialSell", 'omgbtc');
+        Meteor.call("bitfinex.martingaleSHBL", 'omgbtc');
     }
 
     initialSellNEOUSD(){
-        Meteor.call("bitfinex.initialSell", 'neousd');
+        Meteor.call("bitfinex.martingaleSHBL", 'neousd');
     }
 
     initialSellNEOBTC(){
-        Meteor.call("bitfinex.initialSell", 'neobtc');
+        Meteor.call("bitfinex.martingaleSHBL", 'neobtc');
     }
 
     initialSellXRPUSD(){
-        Meteor.call("bitfinex.initialSell", 'xrpusd');
+        Meteor.call("bitfinex.martingaleSHBL", 'xrpusd');
     }
 
     initialSellXRPBTC(){
-        Meteor.call("bitfinex.initialSell", 'xrpbtc');
+        Meteor.call("bitfinex.martingaleSHBL", 'xrpbtc');
+    }
+
+    initialBuyETHUSD(){
+        Meteor.call("bitfinex.martingaleBLSH", 'ethusd');
+    }
+
+    initialBuyETHBTC(){
+        Meteor.call("bitfinex.martingaleBLSH", 'ethbtc');
+    }
+
+    initialBuyOMGUSD(){
+        Meteor.call("bitfinex.martingaleBLSH", 'omgusd');
+    }
+
+    initialBuyOMGBTC(){
+        Meteor.call("bitfinex.martingaleBLSH", 'omgbtc');
+    }
+
+    initialBuyNEOUSD(){
+        Meteor.call("bitfinex.martingaleBLSH", 'neousd');
+    }
+
+    initialBuyNEOBTC(){
+        Meteor.call("bitfinex.martingaleBLSH", 'neobtc');
+    }
+
+    initialBuyXRPUSD(){
+        Meteor.call("bitfinex.martingaleBLSH", 'xrpusd');
+    }
+
+    initialBuyXRPBTC(){
+        Meteor.call("bitfinex.martingaleBLSH", 'xrpbtc');
     }
 
     wssListenerSetup(){
@@ -190,14 +226,24 @@ export default class BitfinexTesting extends Component {
                         </div>
                         <div className="panel">
                             <h4>Martingale Algorithm Test</h4>
-                            <button onClick={this.initialSellETHUSD.bind(this)}>Initial Sell ETHUSD</button>
-                            <button onClick={this.initialSellOMGUSD.bind(this)}>Initial Sell OMGUSD</button>
-                            <button onClick={this.initialSellOMGBTC.bind(this)}>Initial Sell OMGBTC</button>
-                            <button onClick={this.initialSellNEOUSD.bind(this)}>Initial Sell NEOUSD</button>
-                            <button onClick={this.initialSellNEOBTC.bind(this)}>Initial Sell NEOBTC</button>
-                            <button onClick={this.initialSellXRPUSD.bind(this)}>Initial Sell XRPUSD</button>
-                            <button onClick={this.initialSellXRPBTC.bind(this)}>Initial Sell XRPBTC</button>
-                            <button onClick={this.wssListenerSetup.bind(this)}>Wss Listener Setup</button>
+                            <h5>SHBL</h5>
+                            <button onClick={this.initialSellETHUSD.bind(this)}>ETHUSD</button>
+                            <button onClick={this.initialSellETHBTC.bind(this)}>ETHBTC</button>
+                            <button onClick={this.initialSellOMGUSD.bind(this)}>OMGUSD</button>
+                            <button onClick={this.initialSellOMGBTC.bind(this)}>OMGBTC</button>
+                            <button onClick={this.initialSellNEOUSD.bind(this)}>NEOUSD</button>
+                            <button onClick={this.initialSellNEOBTC.bind(this)}>NEOBTC</button>
+                            <button onClick={this.initialSellXRPUSD.bind(this)}>XRPUSD</button>
+                            <button onClick={this.initialSellXRPBTC.bind(this)}>XRPBTC</button>
+                            <h5>BLSH</h5>
+                            <button onClick={this.initialBuyETHUSD.bind(this)}>ETHUSD</button>
+                            <button onClick={this.initialBuyETHBTC.bind(this)}>ETHBTC</button>
+                            <button onClick={this.initialBuyOMGUSD.bind(this)}>OMGUSD</button>
+                            <button onClick={this.initialBuyOMGBTC.bind(this)}>OMGBTC</button>
+                            <button onClick={this.initialBuyNEOUSD.bind(this)}>NEOUSD</button>
+                            <button onClick={this.initialBuyNEOBTC.bind(this)}>NEOBTC</button>
+                            <button onClick={this.initialBuyXRPUSD.bind(this)}>XRPUSD</button>
+                            <button onClick={this.initialBuyXRPBTC.bind(this)}>XRPBTC</button>
                         </div>
                         <div className="panel">
                             <h4>Orders Collection</h4>

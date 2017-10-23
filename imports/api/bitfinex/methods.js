@@ -7,16 +7,25 @@ import { getWebsocketClient, openSocket, restartWebsocketClient,
     ping, keepAlive, isSocketAlive,
     getWssOnOpenFunction } from '/imports/api/bitfinex/wss.js';
 
-import { resyncMartingaleSHBLBitfinex, initialSellFunction, wssOrderListenerMartingaleSHBLFunction, martingaleRunCreateNextOrders } from '/imports/api/bitfinex/algorithm/martingale/sell-high-buy-low/bitfinex-martingale-SHBL.js';
+// import { resyncMartingaleSHBLBitfinex, initialSellFunction, wssOrderListenerMartingaleSHBLFunction, martingaleRunCreateNextOrders } from '/imports/api/bitfinex/algorithm/martingale/sell-high-buy-low/bitfinex-martingale-SHBL.js';
 import { insertErrorLogNoFiber, insertUpdateLogNoFiber, insertErrorLogFiber } from '/imports/api/system-logs/systemLogs-update.js';
 import { parseApiWallet, parseApiActivePositions } from '/imports/api/bitfinex/lib/parseResponse/api/apiResponseParser.js';
 
 import { findOneOrderWithOrderIdNoFiber } from '/imports/api/orders/orders-search.js';
 
+
+import { wssOrderListenerFunction } from '/imports/api/bitfinex/algorithm/algorithm-wss-listeners.js';
+import { startMartingale } from '/imports/api/bitfinex/algorithm/algorithm-start.js';
+import { resyncBitfinexAlgorithms } from '/imports/api/bitfinex/algorithm/algorithm-resync.js';
+import { martingaleRunCreateNextOrders } from '/imports/api/bitfinex/algorithm/martingale/martingale-bitfinex.js';
+
 // algorithm
 Meteor.methods({
-    "bitfinex.initialSell": function(symbol){
-        initialSellFunction(symbol);
+    "bitfinex.martingaleSHBL": function(symbol){
+        startMartingale(symbol, 'SHBL');
+    },
+    "bitfinex.martingaleBLSH": function(symbol){
+        startMartingale(symbol, 'BLSH');
     },
     "bitfinex.wssListenerSetup": function(){
 
@@ -46,8 +55,8 @@ Meteor.methods({
         var onOpenFunction = () => {
             websocketAddMessageListener( messageListener );
             websocketAddMessageListener( pingPongListener );
-            websocketAddMessageListener( wssOrderListenerMartingaleSHBLFunction);
-            setTimeout( () => resyncMartingaleSHBLBitfinex(), 5000);
+            websocketAddMessageListener( wssOrderListenerFunction);
+            setTimeout( () => resyncBitfinexAlgorithms(), 5000);
         };
 
         if(getWssOnOpenFunction() == null){

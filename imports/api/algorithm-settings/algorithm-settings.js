@@ -13,17 +13,12 @@ AlgorithmSettingsSchema = new SimpleSchema({
     is_active: {
         type: Boolean
     },
-    step_size: {
+    next_step_percentage: {
         type: Number,
         decimal: true,
         optional: true
     },
-    buy_back: {
-        type: Number,
-        decimal: true,
-        optional: true
-    },
-    reset_size: {
+    reset_percentage: {
         type: Number,
         decimal: true,
         optional: true
