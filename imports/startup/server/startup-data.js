@@ -19,9 +19,43 @@ var AlgorithmSettingsStartupData = [
         exchange: "bitfinex",
         symbol: "ethusd",
         is_active: false,
-        step_size: 0.02,
-        buy_back: .99,
-        start_amount: 0.1
+        next_step_percentage: 1.02,
+        reset_percentage: .99,
+        start_amount: 0.4,
+        max_margin_amount: 300
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "ethusd",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.01,
+        start_amount: 0.4,
+        max_margin_amount: 300
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "ethbtc",
+        is_active: false,
+        next_step_percentage: 1.02,
+        reset_percentage: .99,
+        start_amount: 0.4,
+        max_margin_amount: 300
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "ethbtc",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.01,
+        start_amount: 0.4,
+        max_margin_amount: 300
     },
     {
         name: "martingale",
@@ -29,9 +63,131 @@ var AlgorithmSettingsStartupData = [
         exchange: "bitfinex",
         symbol: "omgusd",
         is_active: false,
-        step_size: 0.03,
-        buy_back: .99,
-        start_amount: 0.1
+        next_step_percentage: 1.015,
+        reset_percentage: .99,
+        start_amount: 16.5,
+        max_margin_amount: 12500
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "omgusd",
+        is_active: false,
+        next_step_percentage: 0.9825,
+        reset_percentage: 1.01,
+        start_amount: 16.5,
+        max_margin_amount: 12500
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "omgbtc",
+        is_active: false,
+        next_step_percentage: 1.02,
+        reset_percentage: .99,
+        start_amount: 16.5,
+        max_margin_amount: 12500
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "omgbtc",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.01,
+        start_amount: 16.5,
+        max_margin_amount: 12500
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "neobtc",
+        is_active: false,
+        next_step_percentage: 1.02,
+        reset_percentage: .99,
+        start_amount: 0.1,
+        max_margin_amount: 3000
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "neobtc",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.01,
+        start_amount: 0.1,
+        max_margin_amount: 3000
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "neousd",
+        is_active: false,
+        next_step_percentage: 1.02,
+        reset_percentage: .99,
+        start_amount: 4,
+        max_margin_amount: 3000
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "neousd",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.011,
+        start_amount: 4,
+        max_margin_amount: 3000
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "xrpusd",
+        is_active: false,
+        next_step_percentage: 1.02,
+        reset_percentage: .99,
+        start_amount: 560,
+        max_margin_amount: 410000
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "xrpusd",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.01,
+        start_amount: 560,
+        max_margin_amount: 410000
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "xrpbtc",
+        is_active: false,
+        next_step_percentage: 1.02,
+        reset_percentage: .99,
+        start_amount: 560,
+        max_margin_amount: 410000
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "xrpbtc",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.01,
+        start_amount: 560,
+        max_margin_amount: 410000
     }
 ]
 
@@ -71,9 +227,10 @@ AlgorithmSettingsStartupData.forEach( (data) => {
         exchange: data.exchange,
         symbol: data.symbol,
         is_active: data.is_active,
-        step_size: data.step_size ? data.step_size : null,
-        buy_back: data.buy_back ? data.buy_back : null,
-        start_amount: data.start_amount ? data.start_amount : null
+        next_step_percentage: data.next_step_percentage ? data.next_step_percentage : null,
+        reset_percentage: data.reset_percentage ? data.reset_percentage : null,
+        start_amount: data.start_amount ? data.start_amount : null,
+        max_margin_amount: data.max_margin_amount ? data.max_margin_amount : null
     }
 
     var algorithmSettingData = AlgorithmSettings.findOne(algorithmSettingFindCriteria)

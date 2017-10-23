@@ -47,19 +47,25 @@ const getPreviousWssData = function(){
     return previousWssData;
 }
 
-export const resyncMartingaleSHBLBitfinex = function(){
-    console.log("resyncing to martingale SHBL Bitfinex algorithm run");
+export const resyncMartingaleBitfinex = function(){
+    console.log("resyncing to martingale Bitfinex algorithm run");
 
     // find active algorithm run
-    var algorithm = Algorithms.findOne(margingaleAlgoFindCriteria);
+    var martingaleAlgorithms = Algorithms.find({name: "martingale"}).fetch();
+    var algorithmIds = [];
+    martingaleAlgorithms.forEach( algorithm => {
+        algorithmIds.push(algorithm._id)
+    })
+    // find active algorithm run
     var activeAlgorithmRuns =  AlgorithmRuns.find({status: 'ACTIVE',
         exchange: 'bitfinex',
-        algorithm_id: algorithm._id}).fetch();
+        algorithm_id: {$in: algorithmIds}}).fetch();
     // find the active orders within algorithm run
     if(activeAlgorithmRuns){
         activeAlgorithmRuns.forEach( algorithmRun => {
             console.log("algorithm run: ", algorithmRun);
-            insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol, "Resyncing with margingale SHBL bitfinex " + algorithmRun.symbol)
+            var algorithm = Algorithms.findOne(algorithmRun.algorithm_id);
+            insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol, "Resyncing with margingale bitfinex " + algorithmRun.symbol)
             var activeOrders = activeOrdersWithOrderIdNoFiber(algorithmRun.order_ids);
             activeOrders.forEach( order => {
                 // add a delay in there with each order so the server can finish api calls in orderly fashion
@@ -69,11 +75,11 @@ export const resyncMartingaleSHBLBitfinex = function(){
                     var parsedWssStatus = convertApiParsedOrderToWssParsedOrder(parsedOrderStatus);
                     console.log("parsed order status", parsedOrderStatus);
                     console.log("converted to wss", parsedWssStatus);
-                    if (parsedOrderStatus.status == 'EXECUTED' || parsedOrderStatus.remaining_amount == 0){
+                    if (parsedOrderStatus.status == 'EXECUTED' || parsedOrderStatus.remaining_amount <= 0.0001){
                         // convert api order detail to parsedWssOrderDetail
                         insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
                             orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Executed. Continue next step");
-                        martingaleNextStep(parsedWssStatus);
+                        martingaleNextStep(parsedWssStatus, algorithm.type);
                     } else if (parsedWssStatus.status == 'CANCELED'){
                         // update canceled order
                         insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
@@ -152,38 +158,6 @@ export const startNewMartingale = function(symbol, martingaleType){
 
 }
 
-
-export const wssOrderListenerMartingaleSHBLFunction = function(data){
-    if(data.length >= 3){
-        if(data[1] == 'oc'){
-            var parsedWssOrderDetail = parseWssOrder(data[2]);
-            console.log("data detail", parsedWssOrderDetail);
-
-            if (parsedWssOrderDetail.status.includes('EXECUTED') || parsedWssOrderDetail.amount == 0){
-                console.log("order executed");
-                // console.log("previous wss data", getPreviousWssData());
-                // make sure there's no duplicate data sent from the wss server
-                // if(getPreviousWssData() == null || getPreviousWssData().original_amount != parsedWssOrderDetail.original_amount && getPreviousWssData().symbol != parsedWssOrderDetail.symbol){
-                //     setPreviousWssData(parsedWssOrderDetail);
-                martingaleNextStep(parsedWssOrderDetail);
-                // } else {
-                //     insertErrorLogNoFiber("server", "bitfinex", "server", "duplicate executed message on order { " + parsedWssOrderDetail.original_amount + "@ $" + parsedWssOrderDetail.original_price + " }");
-                // }
-            } else if(parsedWssOrderDetail.status.includes('CANCELED')){
-                console.log("order cancelled");
-                // update canceled order
-
-                updateCancelOrder(parsedWssOrderDetail.order_id);
-
-                // this is supposed to be in executed portion, but using this to test since I cannot test with real money yet
-                // for testing
-                // martingaleNextStep(parsedWssOrderDetail);
-
-            }
-        }
-    }
-}
-
 // functions for initial sell orders
 
 const initialOrderFunction = function(orderBook, symbol, algorithmId){
@@ -194,17 +168,20 @@ const initialOrderFunction = function(orderBook, symbol, algorithmId){
     var algorithmSetting = AlgorithmSettings.findOne({symbol: symbol, exchange: "bitfinex", algorithm_id: algorithmId});
     var initialPrice = null;
     var side = null;
+    var amount = null;
     if(algorithm.type == "SHBL"){
-        initialPrice = parseFloat(orderBook.bids[0].price) - 0.05;
+        initialPrice = parseFloat(orderBook.bids[0].price) * 0.995;
         side = "sell";
+        amount = algorithmSetting.start_amount - (Math.random() * algorithmSetting.start_amount * 0.04);
     } else if (algorithm.type == "BLSH"){
-        initialPrice = parseFloat(orderBook.asks[0].price) + 0.05;
+        initialPrice = parseFloat(orderBook.asks[0].price) * 1.005;
         side = "buy";
+        amount = algorithmSetting.start_amount - (Math.random() * algorithmSetting.start_amount * 0.04);
     }
 
     var initialOrderParams = {
         symbol: symbol,
-        amount: algorithmSetting.start_amount.toString(),
+        amount: amount.toString(),
         price: initialPrice.toString(),
         side: side,
         type: "limit",
@@ -227,14 +204,13 @@ const saveOrderAndInitNewAlgorithmRun = function(orderAPIResponse, algorithmId){
     createNewAlgorithmRun(orderAPIResponse, algorithmId);
 }
 
-const saveOrderAndAddOrderIdToAlgorithmRun = function(orderApiResponse){
+const saveOrderAndAddOrderIdToAlgorithmRun = function(orderApiResponse, algorithmRun){
     console.log("save order and add order id to algorithm run response", orderApiResponse);
-    var algorithm = Algorithms.findOne(margingaleAlgoFindCriteria);
-    insertUpdateLogNoFiber(algorithm._id, 'bitfinex', orderApiResponse.symbol,
+    insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', orderApiResponse.symbol,
         orderApiResponse.side + " Order (" + orderApiResponse.original_amount + " @ $" + orderApiResponse.price + ") Created");
     saveOrder(orderApiResponse);
     var parsedApiOrder = parseApiOrder(orderApiResponse);
-    addOrderToAlgorithmRun(parsedApiOrder);
+    addOrderToAlgorithmRun(parsedApiOrder, algorithmRun);
 }
 
 const saveOrder = function(orderAPIResponse) {
@@ -280,10 +256,7 @@ const createNewAlgorithmRun = function(orderAPIResponse, algorithmId){
     }
 }
 
-const addOrderToAlgorithmRun = function(parsedApiOrder){
-    var algorithm = Algorithms.findOne(margingaleAlgoFindCriteria);
-    var algorithmRun = findActiveAlgorithmRunNoFiber(algorithm._id, 'bitfinex', parsedApiOrder.symbol);
-    console.log("algorithm", algorithm);
+const addOrderToAlgorithmRun = function(parsedApiOrder, algorithmRun){
     console.log("algorithmRun", algorithmRun);
     if(algorithmRun){
         addOrderIdToAlgorithmRunNoFiber(algorithmRun._id, parsedApiOrder.order_id);
@@ -294,18 +267,16 @@ const addOrderToAlgorithmRun = function(parsedApiOrder){
 
 // functions for wss listener function
 
-export const martingaleNextStep = function(parsedWssExecutedOrderDetail){
+export const martingaleNextStep = function(parsedWssExecutedOrderDetail, martingaleType){
 
     // update orders, 5 second delay in case if order is filled immediately. Giving time for api response for orders to be saved in the database
     setTimeout( () => martingaleRunUpdateOrders(parsedWssExecutedOrderDetail), 10000);
 
-    // next order or restart new run is 15 second delay to give 10 second leeway to update existing orders
-    if(parsedWssExecutedOrderDetail.original_amount > 0){ // buy order
-        console.log("resetting martingale run, start a new run");
-        setTimeout( () => margingaleRunCompleteAndInitNew(parsedWssExecutedOrderDetail), 20000);
-    } else if (parsedWssExecutedOrderDetail.original_amount < 0){ // sell order
-        setTimeout(() => martingaleRunCreateNextOrders(parsedWssExecutedOrderDetail), 20000);
-    }
+    // check if remaining amount in algorithmRun is 0
+    // if 0, then init new
+    // if not, continue to next step
+    setTimeout( () => margingaleRunCompleteAndInitNewOrNextStep(parsedWssExecutedOrderDetail, martingaleType), 20000);
+
 }.future()
 
 /**
@@ -360,7 +331,7 @@ const martingaleRunUpdateOrders = function(parsedWssExecutedOrderDetail){
                 "Check if order: (" + order.original_amount + " @ $ " + order.price + ") is partially filled then cancel");
             var errorHandlingFunction = (apiErrorMessage) => {
                 insertErrorLogFiber(algorithmRun.algorithm_id, "bitfinex", algorithmRun.symbol, "Get order status error: " + JSON.stringify(apiErrorMessage))
-                if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
+                if(apiErrorMessage.message.includes('Nonce is too small') || apiErrorMessage){
                     setTimeout(() => getMyOrderStatus({order_id: order.order_id}).then( (myOrderStatusApiResponse) => updatePartialOrderThenCancelOrder(myOrderStatusApiResponse, algorithmRun) )
                         .catch( errorHandlingFunction ), 1000);
                 }
@@ -410,7 +381,9 @@ const updatePartialOrderThenCancelOrder = function(activeApiOrderStatusResponse,
 
     var errorHandlingFunction = (apiErrorMessage) => {
         insertErrorLogFiber(algorithmRun.algorithm_id, "bitfinex", algorithmRun.symbol, "Cancel Order Error" + JSON.stringify(apiErrorMessage))
-        if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
+        if (apiErrorMessage.message.includes('Order could not be cancelled')){
+            updateCancelOrder(parsedApiOrder.order_id);
+        } else if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
             setTimeout(() => cancelOrder({order_id: parsedApiOrder.order_id}).then( (response) => insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', parsedApiOrder.symbol,
                 parsedApiOrder.side + " Order (" + parsedApiOrder.original_amount + " @" + parsedApiOrder.price + ") Cancelled"))
                 .catch( errorHandlingFunction ), 1000)
@@ -424,18 +397,18 @@ const updatePartialOrderThenCancelOrder = function(activeApiOrderStatusResponse,
 
 }
 
-const margingaleRunCompleteAndInitNew = function(parsedWssExecutedOrderDetail){
+const margingaleRunCompleteAndInitNewOrNextStep = function(parsedWssExecutedOrderDetail, martingaleType){
     var algorithmRun = findActiveAlgorithmRunWithOrderIdNoFiber(parsedWssExecutedOrderDetail.order_id);
     var algorithm = Algorithms.findOne({_id: algorithmRun.algorithm_id})
     if(algorithmRun){
-        if(algorithmRun.amount_remaining == 0 || algorithmRun.amount_remaining <= 0.000000001){
+        if(algorithmRun.amount_remaining == 0 || algorithmRun.amount_remaining <= 0.00001){
             insertUpdateLogNoFiber(algorithmRun.algorithm_id, algorithmRun.exchange, algorithmRun.symbol, "remaining amount is 0 in algorithm run. Start restart algorithm run");
             updateCompleteAlgorithmRunNoFiber(algorithmRun._id);
             startNewMartingale(algorithmRun.symbol, algorithm.type);
         } else {
             // continue with martingale next step
             insertUpdateLogNoFiber(algorithmRun.algorithm_id, algorithmRun.exchange, algorithmRun.symbol, "remaining amount is NOT 0 in algorithm run. Continue to next step in algorithm run");
-            martingaleRunCreateNextOrders(parsedWssExecutedOrderDetail);
+            martingaleRunCreateNextOrders(parsedWssExecutedOrderDetail, martingaleType);
         }
 
     }
@@ -451,187 +424,100 @@ const margingaleRunCompleteAndInitNew = function(parsedWssExecutedOrderDetail){
  *          - create next buy order with buy_back * average sold price of amount sold
  * @param executedOrderDetail
  */
-export const martingaleRunCreateNextOrders = function(parsedWssExecutedOrderDetail){
+export const martingaleRunCreateNextOrders = function(parsedWssExecutedOrderDetail, martingaleType){
     // create new orders
     // set a new sell order with double the amount
 
     // set a buy order to buy back the total amount sold
 
-    console.log("martingalerun creating next orders");
+    console.log("martingale run creating next orders");
     var symbol = parsedWssExecutedOrderDetail.symbol;
     var algorithmRun = findActiveAlgorithmRunWithOrderIdNoFiber(parsedWssExecutedOrderDetail.order_id);
-    var algorithm = Algorithms.findOne({_id: algorithmRun.algorithm_id});
     var algorithmSetting = AlgorithmSettings.findOne({symbol: symbol, exchange: "bitfinex", algorithm_id: algorithmRun.algorithm_id});
     console.log("algorithm settings finding criteria", {symbol: symbol, exchange: "bitfinex", algorithm_id: algorithmRun.algorithm_id});
-    console.log("algorithm", algorithm);
     console.log("algorithm run", algorithmRun);
     console.log("algorithmSetting", algorithmSetting);
     if(algorithmSetting){
-        // another method with amount, just double the total sold amount
-        var next_sell_amount = algorithmRun.amount_remaining * 2;
 
-        // var next_sell_amount = (algorithmRun.amount_remaining + algorithmSetting.start_amount);
-
-        var soldPrice = parsedWssExecutedOrderDetail.average_price != 0 ? parsedWssExecutedOrderDetail.average_price : parsedWssExecutedOrderDetail.original_price;
-        var next_sell_price_orig = soldPrice * (1 + algorithmSetting.step_size);
-        // var next_sell_price = (next_sell_price_orig + 10).toFixed(2);
-        var next_sell_price = (next_sell_price_orig).toFixed(2);
-        var sell_order_params = {
+        // generic martingale
+        var next_step_amount = algorithmRun.amount_remaining * 2;
+        var current_step_price = parsedWssExecutedOrderDetail.average_price != 0 ? parsedWssExecutedOrderDetail.average_price : parsedWssExecutedOrderDetail.original_price;
+        var next_step_price_orig = current_step_price * (algorithmSetting.next_step_percentage);
+        var next_step_price = (next_step_price_orig).toString();
+        var next_order_params = {
             symbol: symbol,
-            amount: next_sell_amount.toString(),
-            price: next_sell_price,
-            side: "sell",
+            amount: next_step_amount.toString(),
+            price: next_step_price,
+            side: martingaleType == 'SHBL' ? "sell" : "buy",
             type: "limit",
             exchange: "bitfinex"
         }
 
         var total = algorithmRun.average_total_price * algorithmRun.amount_total;
         var executed = algorithmRun.average_executed_price * algorithmRun.amount_executed;
-        var next_buy_price_orig = ( total * algorithmSetting.buy_back - executed) / algorithmRun.amount_remaining;
-        // var next_buy_price = (next_buy_price_orig - 200).toFixed(2);
-        var next_buy_price = (next_buy_price_orig).toFixed(2);
-        var next_buy_amount = algorithmRun.amount_remaining;
-        // var next_buy_amount = (total - executed) / next_buy_price_orig;
-        var buy_order_params = {
+
+        var reset_price_orig = ( total * algorithmSetting.reset_percentage - executed) / algorithmRun.amount_remaining;
+        var reset_price = (reset_price_orig).toString();
+        var reset_amount = algorithmRun.amount_remaining;
+        var reset_order_params = {
             symbol: symbol,
-            amount: next_buy_amount.toString(),
-            price: next_buy_price,
-            side: "buy",
+            amount: reset_amount.toString(),
+            price: reset_price,
+            side: martingaleType == 'SHBL' ? "buy" : "sell",
             type: "limit",
             exchange: "bitfinex"
         }
 
-        console.log("sell order params", sell_order_params);
-        console.log("buy order params", buy_order_params);
+        console.log("next order params", next_order_params);
+        console.log("reset order params", reset_order_params);
 
-        insertUpdateLogNoFiber(algorithm._id, 'bitfinex', parsedWssExecutedOrderDetail.symbol,
-            "Creating Martingale Next Step Orders. Sell Order: " + sell_order_params.amount + "@ $" + sell_order_params.price + ". Buy Order: " + buy_order_params.amount + "@ $" + buy_order_params.price);
-        executeNextMargingaleOrders(sell_order_params, buy_order_params, algorithm._id, algorithmRun);
+        insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', parsedWssExecutedOrderDetail.symbol,
+            "Creating Martingale Next Step Orders. " + (parsedWssExecutedOrderDetail.original_amount < 0 ? "Sell" : "Buy") +
+                " Order: " + next_order_params.amount + "@ $" + next_order_params.price + ". " + (parsedWssExecutedOrderDetail.original_amount < 0 ? "Buy" : "Sell") +
+                " Order: " + reset_order_params.amount + "@ $" + reset_order_params.price);
+        executeNextMargingaleOrders(next_order_params, reset_order_params, algorithmRun, algorithmSetting);
 
     }
 
 }.future()
 
-const executeNextMargingaleOrders = function(sellOrderParams, buyOrderParams, algorithmId, algorithmRun){
-    if(sellOrderParams.type == 'exchange limit'){
-        exchangeNextMartingaleOrder(sellOrderParams, buyOrderParams, algorithmId, algorithmRun);
-    } else if (sellOrderParams.type == 'limit'){
-        marginNextMartingaleOrder(sellOrderParams, buyOrderParams, algorithmId, algorithmRun);
+const executeNextMargingaleOrders = function(nextOrderParams, resetOrderParams, algorithmRun, algorithmSetting){
+    if (nextOrderParams.type == 'limit'){
+        marginNextMartingaleOrder(nextOrderParams, resetOrderParams, algorithmRun, algorithmSetting);
     }
 
 }
 
-const exchangeNextMartingaleOrder = function(sellOrderParams, buyOrderParams, algorithmId){
+const marginNextMartingaleOrder = function(nextOrderParams, resetOrderParams, algorithmRun, algorithmSetting){
     var nextStepOrdersFunction = (walletApiResponse) =>{
 
         var parsedApiWallets = parseApiWallet(walletApiResponse);
 
-        var sellOrderCurrency = sellOrderParams.symbol.slice(0, 3);
-        var buyOrderCurrency = buyOrderParams.symbol.slice(3, 6);
+        var nextOrderCurrency = nextOrderParams.symbol.slice(0, 3);
+        var resetOrderCurrency = resetOrderParams.symbol.slice(3, 6);
 
-        var sellCurrencyBalance = getExchangeCurrencyBalanceFromWallets(parsedApiWallets, sellOrderCurrency);
+        var sellCurrencyBalance = getMarginCurrencyBalanceFromWallets(parsedApiWallets, nextOrderCurrency);
 
-        var buyCurrencyBalance = getExchangeCurrencyBalanceFromWallets(parsedApiWallets, buyOrderCurrency);
         // // if wallet has enough eth balance
-        if(hasEnoughSellExchangeBalance(sellCurrencyBalance, sellOrderParams)){
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', sellOrderParams.symbol,
-                "Has Enough Balance for Sell Order: " + sellOrderParams.amount + "@ $" + sellOrderParams.price);
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', sellOrderParams.symbol,
-                "Creating Sell Order: " + sellOrderParams.amount + "@ $" + sellOrderParams.price);
+        if(hasEnoughNextOrderMarginBalance(sellCurrencyBalance, nextOrderParams, algorithmRun, algorithmSetting)){
+            insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', nextOrderParams.symbol,
+                "Has Enough Balance for " + nextOrderParams.side + " Order: " + nextOrderParams.amount + "@ $" + nextOrderParams.price);
+            insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', nextOrderParams.symbol,
+                "Creating " + nextOrderParams.side + " Order: " + nextOrderParams.amount + "@ $" + nextOrderParams.price);
 
-            var sellOrderErrorHandlingFunction = (apiErrorMessage) => {
-                insertErrorLogFiber(algorithmId, "bitfinex", sellOrderParams.symbol, "martingale next step sell order error: " + JSON.stringify(apiErrorMessage))
+            var nextOrderErrorHandlingFunction = (apiErrorMessage) => {
+                insertErrorLogFiber(algorithmRun.algorithm_id, "bitfinex", nextOrderParams.symbol, "martingale next step " + nextOrderParams.side + " order error: " + JSON.stringify(apiErrorMessage))
                 if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
-                    setTimeout(() => newOrder(sellOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun )
-                        .catch( sellOrderErrorHandlingFunction ), 1000)
-
+                    setTimeout( () => newOrder(nextOrderParams).then( (orderAPIResponse) => saveOrderAndAddOrderIdToAlgorithmRun(orderAPIResponse, algorithmRun) )
+                        .catch( nextOrderErrorHandlingFunction ), 1000)
                 }
             }
 
-            newOrder(sellOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun )
-                .catch( sellOrderErrorHandlingFunction );
+            newOrder(nextOrderParams).then( (orderAPIResponse) => saveOrderAndAddOrderIdToAlgorithmRun(orderAPIResponse, algorithmRun) )
+                .catch( nextOrderErrorHandlingFunction );
         } else {
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', sellOrderParams.symbol,
-                "Not Enough Balance for Sell Order: " + sellOrderParams.amount + "@ $" + sellOrderParams.price);
-        }
-
-
-
-
-        var buyOrderErrorHandlingFunction = (apiErrorMessage) => {
-            insertErrorLogFiber(algorithmId, "bitfinex", buyOrderParams.symbol, "martingale next step buy order error: " + JSON.stringify(apiErrorMessage))
-            if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
-                setTimeout(() => newOrder(buyOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun)
-                    .catch( buyOrderErrorHandlingFunction ), 1000)
-            }
-        }
-
-        // if wallet has enough usd balance
-        if(hasEnoughBuyExchangeBalance(buyCurrencyBalance, buyOrderParams)){
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', buyOrderParams.symbol,
-                "Has Enough Buy Balance for Buy Order: " + buyOrderParams.amount + "@ $" + buyOrderParams.price);
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', buyOrderParams.symbol,
-                "Creating Buy Order: " + buyOrderParams.amount + "@ $" + buyOrderParams.price);
-
-            setTimeout( () => newOrder(buyOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun)
-                .catch( buyOrderErrorHandlingFunction ), 5000 );
-        } else {
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', buyOrderParams.symbol,
-                "Not Enough Buy Balance for Buy Order: " + buyOrderParams.amount + "@ $" + buyOrderParams.price);
-            setTimeout( () => newOrder(buyOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun)
-                .catch( buyOrderErrorHandlingFunction ), 5000 );
-        }
-
-
-        console.log("parsed api wallet", parsedApiWallets);
-        console.log("sell order currency", sellOrderCurrency);
-        console.log("sell order wallet", sellCurrencyBalance);
-        console.log("has enough sell balance", hasEnoughSellBalance(sellCurrencyBalance, sellOrderParams));
-        console.log("buy order currency", buyOrderCurrency);
-        console.log("buy order wallet", buyCurrencyBalance);
-        console.log("has enough buy balance", hasEnoughBuyBalance(buyCurrencyBalance, buyOrderParams));
-    }
-
-    var getBalanceErrorHandlingFunction = (apiErrorMessage) => {
-        insertErrorLogFiber(algorithmId, "bitfinex", sellOrderParams.symbol, "Martingale next step getBalance error: " + JSON.stringify(apiErrorMessage))
-        if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
-            setTimeout(() => getWalletBalances().then( nextStepOrdersFunction ).catch( getBalanceErrorHandlingFunction ), 1000);
-        }
-    }
-
-    setTimeout(() => getWalletBalances().then( nextStepOrdersFunction ).catch( getBalanceErrorHandlingFunction ), 2000);
-}
-
-const marginNextMartingaleOrder = function(sellOrderParams, buyOrderParams, algorithmId, algorithmRun){
-    var nextStepOrdersFunction = (walletApiResponse) =>{
-
-        var parsedApiWallets = parseApiWallet(walletApiResponse);
-
-        var sellOrderCurrency = sellOrderParams.symbol.slice(0, 3);
-        var buyOrderCurrency = buyOrderParams.symbol.slice(3, 6);
-
-        var sellCurrencyBalance = getMarginCurrencyBalanceFromWallets(parsedApiWallets, sellOrderCurrency);
-
-        // // if wallet has enough eth balance
-        if(hasEnoughSellMarginBalance(sellCurrencyBalance, sellOrderParams, algorithmRun)){
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', sellOrderParams.symbol,
-                "Has Enough Balance for Sell Order: " + sellOrderParams.amount + "@ $" + sellOrderParams.price);
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', sellOrderParams.symbol,
-                "Creating Sell Order: " + sellOrderParams.amount + "@ $" + sellOrderParams.price);
-
-            var sellOrderErrorHandlingFunction = (apiErrorMessage) => {
-                insertErrorLogFiber(algorithmId, "bitfinex", sellOrderParams.symbol, "martingale next step sell order error: " + JSON.stringify(apiErrorMessage))
-                if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
-                    setTimeout( () => newOrder(sellOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun )
-                        .catch( sellOrderErrorHandlingFunction ), 1000)
-                }
-            }
-
-            newOrder(sellOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun )
-                .catch( sellOrderErrorHandlingFunction );
-        } else {
-            insertUpdateLogNoFiber(algorithmId, 'bitfinex', sellOrderParams.symbol,
-                "Not Enough Balance for Sell Order: " + sellOrderParams.amount + "@ $" + sellOrderParams.price);
+            insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', nextOrderParams.symbol,
+                "Not Enough Balance for " + nextOrderParams.side + " Order: " + nextOrderParams.amount + "@ $" + nextOrderParams.price);
         }
 
 
@@ -639,29 +525,29 @@ const marginNextMartingaleOrder = function(sellOrderParams, buyOrderParams, algo
 
         // buy order, assuming it has enough margin balance to buy back
 
-        var buyOrderErrorHandlingFunction = (apiErrorMessage) => {
-            insertErrorLogFiber(algorithmId, "bitfinex", buyOrderParams.symbol, "martingale next step buy order error: " + JSON.stringify(apiErrorMessage))
+        var resetOrderErrorHandlingFunction = (apiErrorMessage) => {
+            insertErrorLogFiber(algorithmRun.algorithm_id, "bitfinex", resetOrderParams.symbol, "martingale next step " + resetOrderParams.side + " order error: " + JSON.stringify(apiErrorMessage))
             if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
-                setTimeout(() => newOrder(buyOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun)
-                    .catch( buyOrderErrorHandlingFunction ), 1000)
+                setTimeout(() => newOrder(resetOrderParams).then( (orderAPIResponse) => saveOrderAndAddOrderIdToAlgorithmRun(orderAPIResponse, algorithmRun))
+                    .catch( resetOrderErrorHandlingFunction ), 1000)
             }
         }
 
-        insertUpdateLogNoFiber(algorithmId, 'bitfinex', buyOrderParams.symbol,
-            "Creating Buy Back Order: " + buyOrderParams.amount + "@ $" + buyOrderParams.price);
+        insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', resetOrderParams.symbol,
+            "Creating " + resetOrderParams.side + " Back Order: " + resetOrderParams.amount + "@ $" + resetOrderParams.price);
 
-        setTimeout( () => newOrder(buyOrderParams).then( saveOrderAndAddOrderIdToAlgorithmRun)
-            .catch( buyOrderErrorHandlingFunction ), 5000 );
+        setTimeout( () => newOrder(resetOrderParams).then( (orderAPIResponse) => saveOrderAndAddOrderIdToAlgorithmRun(orderAPIResponse, algorithmRun))
+            .catch( resetOrderErrorHandlingFunction ), 5000 );
 
         console.log("parsed api wallet", parsedApiWallets);
-        console.log("sell order currency", sellOrderCurrency);
-        console.log("sell order wallet", sellCurrencyBalance);
-        console.log("has enough sell balance", hasEnoughSellMarginBalance(sellCurrencyBalance, sellOrderParams, algorithmRun));
-        console.log("buy order currency", buyOrderCurrency);
+        console.log("next order currency", nextOrderCurrency);
+        console.log("reset order wallet", sellCurrencyBalance);
+        console.log("has enough next order balance", hasEnoughNextOrderMarginBalance(sellCurrencyBalance, nextOrderParams, algorithmRun, algorithmSetting));
+        console.log("reset order currency", resetOrderCurrency);
     }
 
     var getBalanceErrorHandlingFunction = (apiErrorMessage) => {
-        insertErrorLogFiber(algorithmId, "bitfinex", sellOrderParams.symbol, "Martingale next step getBalance error: " + JSON.stringify(apiErrorMessage))
+        insertErrorLogFiber(algorithmRun.algorithm_id, "bitfinex", nextOrderParams.symbol, "Martingale next step getBalance error: " + JSON.stringify(apiErrorMessage))
 
         if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
             setTimeout(() => getWalletBalances().then( nextStepOrdersFunction ).catch( getBalanceErrorHandlingFunction ), 1000);
@@ -677,9 +563,9 @@ const getMarginCurrencyBalanceFromWallets = function(parsedApiWallets, currency)
     })
 }
 
-const hasEnoughSellMarginBalance = function(sellCurrencyBalance, sellOrderParams, algorithmRun){
-    var maxMarginAmount = sellCurrencyBalance.amount * 3.3;
-    var requiredSellAmount = parseFloat(sellOrderParams.amount) + algorithmRun.amount_remaining;
+const hasEnoughNextOrderMarginBalance = function(sellCurrencyBalance, nextOrderParams, algorithmRun, algorithmSetting){
+    var maxMarginAmount = algorithmSetting.max_margin_amount;
+    var requiredSellAmount = parseFloat(nextOrderParams.amount) + algorithmRun.amount_remaining;
     console.log("checking sell margin balance");
     console.log("algorithm Run", algorithmRun);
     console.log("max margin amount", maxMarginAmount);

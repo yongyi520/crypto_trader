@@ -30,7 +30,6 @@ export const ping = function(){
     isAlive = false;
     console.log("bitfinex wss ping");
     var errorHandlingFunction = function(socketError){
-        console.log("socket error", socketError);
         if(socketError){
             insertErrorLogFiber("server", "bitfinex", "server", "bitfinex socket ping error: " + JSON.stringify(socketError));
             restartWebsocketClient();

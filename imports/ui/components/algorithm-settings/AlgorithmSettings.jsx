@@ -8,10 +8,12 @@ require('/imports/ui/components/algorithm-settings/AlgorithmSettings.sass')
 export class AlgorithmSettings extends Component {
 
     updateAlgorithmSettings(){
+        console.log("updating algorithm settings");
         var updateAlgorithmSettingsData = {
             start_amount: parseFloat(this.refs.startAmount.value),
-            step_size: parseFloat(this.refs.stepSize.value),
-            buy_back: parseFloat(this.refs.buyBack.value)
+            next_step_percentage: parseFloat(this.refs.nexStepPercentage.value),
+            reset_percentage: parseFloat(this.refs.resetPercentage.value),
+            max_margin_amount: parseFloat(this.refs.maxMarginAmount.value)
         }
         console.log("update algorithm data", updateAlgorithmSettingsData);
         Meteor.call("updateAlgorithmSettings", this.props.settings._id, updateAlgorithmSettingsData)
@@ -46,15 +48,21 @@ export class AlgorithmSettings extends Component {
                             </div>
                         </div>
                         <div className="settings-row">
-                            <div className="field_name">Step Size</div>
+                            <div className="field_name">Next Step</div>
                             <div className="input">
-                                <input ref="stepSize" type="text" key={this.props.settings._id} defaultValue={this.props.settings.step_size}/>
+                                <input ref="nexStepPercentage" type="text" key={this.props.settings._id} defaultValue={this.props.settings.next_step_percentage}/>
                             </div>
                         </div>
                         <div className="settings-row">
-                            <div className="field_name">Buy Back</div>
+                            <div className="field_name">Reset Step</div>
                             <div className="input">
-                                <input ref="buyBack" type="text" key={this.props.settings._id} defaultValue={this.props.settings.buy_back}/>
+                                <input ref="resetPercentage" type="text" key={this.props.settings._id} defaultValue={this.props.settings.reset_percentage}/>
+                            </div>
+                        </div>
+                        <div className="settings-row">
+                            <div className="field_name">Max Margin Amount</div>
+                            <div className="input">
+                                <input ref="maxMarginAmount" type="text" key={this.props.settings._id} defaultValue={this.props.settings.max_margin_amount}/>
                             </div>
                         </div>
                         <div className="settings-action-panel">
