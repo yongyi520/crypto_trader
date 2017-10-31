@@ -67,14 +67,14 @@ export const resyncDailyBitfinex = function(){
                         dailyNextStep(parsedWssStatus, algorithm.type);
                     } else if (parsedWssStatus.status == 'CANCELED'){
                         // update canceled order
-                        // insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
-                        //     orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Canceled");
-                        // updateCancelOrder(parsedWssStatus.order_id);
-
-                        // testing
                         insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
-                            orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Executed. Continue next step");
-                        dailyNextStep(parsedWssStatus, algorithm.type);
+                            orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Canceled");
+                        updateCancelOrder(parsedWssStatus.order_id);
+
+                        // // testing
+                        // insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
+                        //     orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Executed. Continue next step");
+                        // dailyNextStep(parsedWssStatus, algorithm.type);
                     } else {
                         console.log("nothing has happened to order", parsedOrderStatus.symbol, " ", parsedOrderStatus.original_amount, "@ $", parsedOrderStatus.price);
                         insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
@@ -159,14 +159,14 @@ export const updatePartialThenNextStepDailyBitfinex = function(){
                         dailyNextStep(parsedWssStatus, algorithm.type);
                     } else if (parsedWssStatus.status == 'CANCELED'){
                         // update canceled order
-                        // insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
-                        //     orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Canceled");
-                        // updateCancelOrder(parsedWssStatus.order_id);
-
-                        // testing
                         insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
-                            orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Executed. Continue next step");
-                        dailyNextStep(parsedWssStatus, algorithm.type);
+                            orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Canceled");
+                        updateCancelOrder(parsedWssStatus.order_id);
+
+                        // // testing
+                        // insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
+                        //     orderStatusApiResponse.side + " order ( " + parsedOrderStatus.original_amount + " @ $" + parsedOrderStatus.average_executed_price + " ) Executed. Continue next step");
+                        // dailyNextStep(parsedWssStatus, algorithm.type);
                     } else {
                         console.log("nothing has happened to order", parsedOrderStatus.symbol, " ", parsedOrderStatus.original_amount, "@ $", parsedOrderStatus.price);
                         insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', algorithmRun.symbol,
@@ -314,19 +314,19 @@ const dailyRunUpdateOrders = function(parsedWssExecutedOrderDetail){
             if(algorithm.type == "SHBL"){
                 if(parsedWssExecutedOrderDetail.original_amount < 0){
                     // - amount for accounting partial executed order
-                    // addTotalAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount - parsedWssExecutedOrderDetail.amount, parsedWssExecutedOrderDetail.average_price);
-                    addTotalAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount, parsedWssExecutedOrderDetail.original_price)
+                    addTotalAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount - parsedWssExecutedOrderDetail.amount, parsedWssExecutedOrderDetail.average_price);
+                    // addTotalAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount, parsedWssExecutedOrderDetail.original_price)
                 } else if (parsedWssExecutedOrderDetail.original_amount > 0){
-                    // addExecutedAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount - parsedWssExecutedOrderDetail.amount, parsedWssExecutedOrderDetail.average_price)
-                    addExecutedAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount, parsedWssExecutedOrderDetail.original_price);
+                    addExecutedAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount - parsedWssExecutedOrderDetail.amount, parsedWssExecutedOrderDetail.average_price)
+                    // addExecutedAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount, parsedWssExecutedOrderDetail.original_price);
                 }
             } else if (algorithm.type == "BLSH"){
                 if(parsedWssExecutedOrderDetail.original_amount < 0){
-                    // addExecutedAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount - parsedWssExecutedOrderDetail.amount, parsedWssExecutedOrderDetail.average_price);
-                    addExecutedAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount, parsedWssExecutedOrderDetail.original_price);
+                    addExecutedAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount - parsedWssExecutedOrderDetail.amount, parsedWssExecutedOrderDetail.average_price);
+                    // addExecutedAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount, parsedWssExecutedOrderDetail.original_price);
                 } else if (parsedWssExecutedOrderDetail.original_amount > 0){
-                    // addTotalAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount - parsedWssExecutedOrderDetail.amount, parsedWssExecutedOrderDetail.average_price)
-                    addTotalAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount, parsedWssExecutedOrderDetail.original_price)
+                    addTotalAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount - parsedWssExecutedOrderDetail.amount, parsedWssExecutedOrderDetail.average_price)
+                    // addTotalAmountAndPriceToAlgorithmRunNoFiber(algorithmRun._id, parsedWssExecutedOrderDetail.original_amount, parsedWssExecutedOrderDetail.original_price)
                 }
             }
 
@@ -377,21 +377,21 @@ const executeResetDailyOrders = function(resetOrderParams, algorithmRun){
         var resetCurrency = resetOrderParams.side == 'sell' ? resetOrderParams.symbol.slice(0, 3) : resetOrderParams.symbol.slice(3, 6);
         var resetCurrencyBalance = getExchangeCurrencyBalanceFromWallets(parsedApiWallets, resetCurrency);
 
-        // if(hasEnoughExchangeBalance(resetCurrencyBalance, resetOrderParams)){
-        //     var resetOrderErrorHandlingFunction = (apiErrorMessage) => {
-        //         insertErrorLogFiber(algorithmRun.algorithm_id, "bitfinex", resetOrderParams.symbol, "bitfinex next step " + resetOrderParams.side + " order error: " + JSON.stringify(apiErrorMessage))
-        //         if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
-        //             setTimeout(() => newOrder(resetOrderParams).then( (orderAPIResponse) => saveOrderAndAddOrderIdToAlgorithmRun(orderAPIResponse, algorithmRun))
-        //                 .catch( resetOrderErrorHandlingFunction ), 1000)
-        //         }
-        //     }
-        //
-        //     insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', resetOrderParams.symbol,
-        //         "Creating " + resetOrderParams.side + " Back Order: " + resetOrderParams.amount + "@ $" + resetOrderParams.price);
-        //
-        //     newOrder(resetOrderParams).then( (orderAPIResponse) => saveOrderAndAddOrderIdToAlgorithmRun(orderAPIResponse, algorithmRun))
-        //         .catch( resetOrderErrorHandlingFunction );
-        // }
+        if(hasEnoughExchangeBalance(resetCurrencyBalance, resetOrderParams)){
+            var resetOrderErrorHandlingFunction = (apiErrorMessage) => {
+                insertErrorLogFiber(algorithmRun.algorithm_id, "bitfinex", resetOrderParams.symbol, "bitfinex next step " + resetOrderParams.side + " order error: " + JSON.stringify(apiErrorMessage))
+                if(apiErrorMessage.message.includes('Nonce is too small') || _.isEmpty(apiErrorMessage)){
+                    setTimeout(() => newOrder(resetOrderParams).then( (orderAPIResponse) => saveOrderAndAddOrderIdToAlgorithmRun(orderAPIResponse, algorithmRun))
+                        .catch( resetOrderErrorHandlingFunction ), 1000)
+                }
+            }
+
+            insertUpdateLogNoFiber(algorithmRun.algorithm_id, 'bitfinex', resetOrderParams.symbol,
+                "Creating " + resetOrderParams.side + " Back Order: " + resetOrderParams.amount + "@ $" + resetOrderParams.price);
+
+            newOrder(resetOrderParams).then( (orderAPIResponse) => saveOrderAndAddOrderIdToAlgorithmRun(orderAPIResponse, algorithmRun))
+                .catch( resetOrderErrorHandlingFunction );
+        }
 
 
         console.log("parsed api wallet", parsedApiWallets);
