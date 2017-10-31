@@ -11,7 +11,6 @@ Meteor.methods({
     "updateAlgorithmSettings": function(algorithmSettingId, algorithmSettingsData){
         var setting = AlgorithmSettings.findOne(algorithmSettingId);
         if(setting){
-            // console.log("algorithm settings data to update", algorithmSettingsData);
             AlgorithmSettings.update({_id: algorithmSettingId}, {
                 $set: algorithmSettingsData
             })

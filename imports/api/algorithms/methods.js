@@ -12,7 +12,7 @@ Meteor.methods({
     "addAlgorithm": function(){
         Algorithms.insert({
             type: "BLSH",
-            name: "martingale"
+            name: "bitfinex"
         })
-    }
+    },
 })

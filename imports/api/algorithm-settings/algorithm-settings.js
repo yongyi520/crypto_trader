@@ -13,17 +13,27 @@ AlgorithmSettingsSchema = new SimpleSchema({
     is_active: {
         type: Boolean
     },
-    step_size: {
+    next_step_percentage: {
         type: Number,
         decimal: true,
         optional: true
     },
-    buy_back: {
+    reset_percentage: {
         type: Number,
         decimal: true,
         optional: true
     },
     start_amount: {
+        type: Number,
+        decimal: true,
+        optional: true
+    },
+    max_margin_amount: {
+        type: Number,
+        decimal: true,
+        optional: true
+    },
+    profit_split_percentage: {
         type: Number,
         decimal: true,
         optional: true

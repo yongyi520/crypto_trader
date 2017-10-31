@@ -1,5 +1,8 @@
 import { Orders } from '/imports/api/orders/orders.js';
 
+// parser
+import { parseApiOrder } from '/imports/api/bitfinex/lib/parseResponse/api/apiResponseParser.js';
+
 // libs
 import Future from 'fibers/future';
 
@@ -43,6 +46,15 @@ export const updateExecutedOrderNoFiber = function(orderId){
     } else {
         console.log("there's no match in orders database to update executed order id: ", orderId)
     }
+}
+
+export const saveApiOrder = function(orderAPIResponse) {
+    console.log("order API Response", orderAPIResponse);
+
+    var orderData = parseApiOrder(orderAPIResponse);
+
+    console.log("inserting order data", orderData);
+    insertOrder(orderData);
 }
 
 export const insertOrder = function( data ){

@@ -119,6 +119,14 @@ export const addExecutedAmountAndPriceToAlgorithmRunNoFiber = function(algorithm
     }
 }
 
+export const addApiOrderToAlgorithmRun = function(parsedApiOrder, algorithmRun){
+    console.log("algorithmRun", algorithmRun);
+    if(algorithmRun){
+        addOrderIdToAlgorithmRunNoFiber(algorithmRun._id, parsedApiOrder.order_id);
+    } else {
+        console.log("cannot find active algorithm run with order id: ", parsedApiOrder.order_id)
+    }
+}
 
 export const addOrderIdToAlgorithmRunNoFiber = function( algorithmRunId, orderId){
     console.log("adding order to algorithm run");

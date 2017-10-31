@@ -20,7 +20,7 @@ export const convertApiParsedOrderToWssParsedOrder = function(parsedApiOrder){
     return {
         order_id: parsedApiOrder.order_id,
         symbol: parsedApiOrder.symbol,
-        amount: parsedApiOrder.side == 'buy' ? parsedApiOrder.executed_amount : parsedApiOrder.executed_amount * -1, // positive for buy, negative for sell
+        amount: parsedApiOrder.side == 'buy' ? parsedApiOrder.remaining_amount : parsedApiOrder.remaining_amount * -1, // positive for buy, negative for sell
         original_amount: parsedApiOrder.side == 'buy' ? parsedApiOrder.original_amount : parsedApiOrder.original_amount * -1, // positive for buy, negative for sell
         type: parsedApiOrder.type,
         status: parsedApiOrder.status, // need to fix this
