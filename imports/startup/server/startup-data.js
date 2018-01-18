@@ -17,6 +17,14 @@ var AlgorithmsStartupData = [
     {
         type: "SHBL",
         name: "daily"
+    },
+    {
+        type: "BLSH",
+        name: "manual"
+    },
+    {
+        type: "SHBL",
+        name: "manual"
     }
 ]
 
@@ -196,6 +204,28 @@ var AlgorithmSettingsStartupData = [
         reset_percentage: 1.01,
         start_amount: 560,
         max_margin_amount: 410000
+    },
+    {
+        name: "martingale",
+        type: "BLSH",
+        exchange: "bitfinex",
+        symbol: "etpusd",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.01,
+        start_amount: 25,
+        max_margin_amount: 5000
+    },
+    {
+        name: "martingale",
+        type: "SHBL",
+        exchange: "bitfinex",
+        symbol: "etpbtc",
+        is_active: false,
+        next_step_percentage: 0.98,
+        reset_percentage: 1.01,
+        start_amount: 25,
+        max_margin_amount: 5000
     },
     {
         name: "daily",

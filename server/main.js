@@ -16,8 +16,8 @@ import {  insertErrorLogFiber } from '/imports/api/system-logs/systemLogs-update
 Meteor.startup(() => {
     // code to run on server at startup
 
-    startBitfinexWssSocket()
-    SyncedCron.start();
+    // startBitfinexWssSocket()
+    // SyncedCron.start();
 });
 
 const startBitfinexWssSocket = function() {

@@ -39,6 +39,14 @@ AlgorithmRunsSchema = new SimpleSchema({
     average_total_price: {
         type: Number,
         decimal: true
+    },
+    profit_order_param: {
+        type: Object,
+        optional: true
+    },
+    stop_loss_order_param: {
+        type: Object,
+        optional: true
     }
 })
 

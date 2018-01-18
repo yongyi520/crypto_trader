@@ -211,7 +211,83 @@ export default class BitfinexTesting extends Component {
         Meteor.call("resetAlgorithmRuns")
     }
 
+    manualOrderCalculator(inputChanged){
+        var budgetSize = parseFloat(this.refs.budgetSize.value);
+        var entryPrice = parseFloat(this.refs.entryPrice.value);
+        var entryOrderSide = this.refs.entryOrderSideInput.value;
+        var entryOrderSideMultiplier = this.refs.entryOrderSideInput.value == "buy" ? 1 : -1;
+        var stopLossPercentage = parseFloat(this.refs.stopLossPercentage.value)/100;
+        var stopLossPrice = parseFloat(this.refs.stopLossPrice.value);
+        var profitPercentage = parseFloat(this.refs.profitPercentage.value)/100;
+        var profitPrice = parseFloat(this.refs.profitPrice.value);
 
+        var profitOrderSide = entryOrderSide == 'buy' ? 'sell' : (entryOrderSide == 'sell' ? 'buy' : 'N/A');
+        var stopLossOrderSide = entryOrderSide;
+        console.log(inputChanged, "value changed");
+        console.log("entry order side", entryOrderSide);
+        console.log("profit order side", profitOrderSide);
+        console.log("stop loss order side", stopLossOrderSide);
+
+        if(this.hasRequiredManualOrderInputs(inputChanged)){
+            if(inputChanged == "stopLossPercentage"){
+                stopLossPrice = entryPrice - entryPrice * stopLossPercentage * entryOrderSideMultiplier;
+                this.refs.stopLossPrice.value = (stopLossPrice).toFixed(5);
+            } else if (inputChanged == "stopLossPrice"){
+                stopLossPercentage = (Math.abs(stopLossPrice / entryPrice - 1) * 100).toFixed(2);
+                console.log("stop loss percentage", stopLossPercentage)
+                this.refs.stopLossPercentage.value = (stopLossPercentage).toFixed(2);
+            } else {
+                console.log("else statement");
+                stopLossPrice = entryPrice - entryPrice * stopLossPercentage * entryOrderSideMultiplier;
+                this.refs.stopLossPrice.value = (stopLossPrice).toFixed(5);
+            }
+
+            if(inputChanged == "profitPercentage"){
+                profitPrice = entryPrice + entryPrice * profitPercentage * entryOrderSideMultiplier;
+                this.refs.profitPrice.value = profitPrice.toFixed(5);
+            } else if (inputChanged == "profitPrice"){
+                profitPercentage = (Math.abs(profitPrice / entryPrice - 1) * 100).toFixed(2);
+                this.refs.profitPercentage.value = profitPercentage;
+            } else {
+                profitPrice = entryPrice + entryPrice * profitPercentage * entryOrderSideMultiplier;
+                this.refs.profitPrice.value = profitPrice.toFixed(5);
+            }
+
+            var amount = (budgetSize) / Math.abs(entryPrice - stopLossPrice);
+
+
+
+            this.refs.entryOrderPrice.value = entryPrice;
+            this.refs.entryOrderAmount.value = amount;
+            this.refs.entryOrderSide.value = entryOrderSide;
+            this.refs.profitOrderPrice.value = profitPrice;
+            this.refs.profitOrderAmount.value = amount;
+            this.refs.profitOrderSide.value = profitOrderSide;
+            this.refs.stopLossOrderPrice.value = stopLossPrice;
+            this.refs.stopLossOrderAmount.value = amount;
+            this.refs.stopLossOrderSide.value = stopLossOrderSide;
+
+            var budgetUsed = amount * entryPrice;
+            var potentialLoss = amount * (stopLossPrice - entryPrice) * entryOrderSideMultiplier;
+            var potentialProfit = amount * (profitPrice - entryPrice) * entryOrderSideMultiplier;
+            this.refs.budgetUsed.value = budgetUsed;
+            this.refs.potentialProfit.value = potentialProfit;
+            this.refs.potentialLoss.value = potentialLoss;
+        }
+    }
+
+    hasRequiredManualOrderInputs(inputChanged){
+        var budgetSize = this.refs.budgetSize.value != "";
+        var entryPrice = this.refs.entryPrice.value != "";
+        var stopLossPercentage = this.refs.stopLossPercentage.value != "";
+        var stopLossPrice = this.refs.stopLossPrice.value != "";
+        var profitPercentage = this.refs.profitPercentage.value != "";
+        var profitPrice = this.refs.profitPrice.value != "";
+
+        return budgetSize && entryPrice &&
+            ((stopLossPercentage) || (stopLossPrice)) &&
+            ((profitPercentage) || (profitPrice));
+    }
 
     render() {
         return (
@@ -221,6 +297,124 @@ export default class BitfinexTesting extends Component {
                         <h2>Bitfinex Testing</h2>
                     </div>
                     <div className="main-content">
+                        <div className="panel">
+                            <h4>Manual Order</h4>
+                            <div className="panel-row">
+                                <div className="panel-inputs">
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Entry Price</h6>
+                                            <input onChange={() => this.manualOrderCalculator("entryPrice")} ref="entryPrice" type="number"/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Side</h6>
+                                            <select ref="entryOrderSideInput" onChange={() => this.manualOrderCalculator("entryOrderSideInput")}>
+                                                <option value="buy">buy</option>
+                                                <option value="sell">sell</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <h6>Amount Willing to Lose</h6>
+                                    <input onChange={() => this.manualOrderCalculator("budgetSize")} ref="budgetSize" type="number"/>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Stop Loss %</h6>
+                                            <input onChange={() => this.manualOrderCalculator("stopLossPercentage")} ref="stopLossPercentage" type="number"/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Stop Loss Price</h6>
+                                            <input onChange={() => this.manualOrderCalculator("stopLossPrice")} ref="stopLossPrice" type="number"/>
+                                        </div>
+                                    </div>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Profit %</h6>
+                                            <input onChange={() => this.manualOrderCalculator("profitPercentage")} ref="profitPercentage" type="number"/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Profit Price</h6>
+                                            <input onChange={() => this.manualOrderCalculator("profitPrice")} ref="profitPrice" type="number"/>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div className="panel-outputs">
+                                    <h6>Entry Order</h6>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Price</h6>
+                                            <input ref="entryOrderPrice" disabled={true} value={0}/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Amount</h6>
+                                            <input ref="entryOrderAmount" disabled={true} value={0}/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Side</h6>
+                                            <input ref="entryOrderSide" disabled={true} />
+                                        </div>
+
+                                    </div>
+                                    <h6>Profit Order</h6>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Price</h6>
+                                            <input ref="profitOrderPrice" disabled={true} value={0}/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Amount</h6>
+                                            <input ref="profitOrderAmount" disabled={true} value={0}/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Side</h6>
+                                            <input ref="profitOrderSide" disabled={true} />
+                                        </div>
+                                    </div>
+                                    <h6>Stop Loss Order</h6>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Price</h6>
+                                            <input ref="stopLossOrderPrice" disabled={true} value={0}/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Amount</h6>
+                                            <input ref="stopLossOrderAmount" disabled={true} value={0}/>
+                                        </div>
+                                        <div className="panel-row-block">
+                                            <h6>Side</h6>
+                                            <input ref="stopLossOrderSide" disabled={true} />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="panel-outputs">
+                                    <h6>Money Details</h6>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Budget Used</h6>
+                                            <input ref="budgetUsed" disabled={true} value={0}/>
+                                        </div>
+                                    </div>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Potential Profit</h6>
+                                            <input ref="potentialProfit" disabled={true} value={0}/>
+                                        </div>
+                                    </div>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Potential Loss</h6>
+                                            <input ref="potentialLoss" disabled={true} value={0}/>
+                                        </div>
+                                    </div>
+                                    <div className="panel-row">
+                                        <div className="panel-row-block">
+                                            <h6>Risk Reward Ratio</h6>
+                                            <input onChange={() => this.manualOrderCalculator("rewardRatio")} ref="rewardRatio" type="number"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div className="panel">
                             <h4>Troubleshoot</h4>
                             <input ref="orderId" type="number"/>
