@@ -10,6 +10,7 @@
     "classnames": "^2.2.5",
     "fibers": "^2.0.0",
     "meteor-node-stubs": "~0.2.4",
+    "node-binance-api": "^0.4.3",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "react-komposer": "^2.0.0",

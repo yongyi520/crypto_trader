@@ -8,8 +8,10 @@ import {
 import TopMenu from '/imports/ui/components/header/top-menu/TopMenu.jsx';
 
 // body pages
+import BinanceContainer from '/imports/ui/components/exchange/binance/BinanceContainer.jsx';
+import BinanceTesting from '/imports/ui/components/debug/binance/BinanceTesting.jsx';
 import BitfinexContainer from '/imports/ui/components/exchange/bitfinex/BitfinexContainer.jsx';
-import BitfinexTesting from '/imports/ui/components/debug/BitfinexTesting';
+import BitfinexTesting from '/imports/ui/components/debug/bitfinex/BitfinexTesting';
 import Home from '/imports/ui/components/home/Home.jsx';
 import Dashboard from '/imports/ui/components/dashboard/Dashboard.jsx';
 
@@ -17,19 +19,18 @@ import '/imports/ui/App.sass'
 
 export default class App extends Component {
 
-    constructor(props){
-        super(props);
-    }
-
     render() {
         return (
             <Router>
                 <div className="body container-fluid">
                     <TopMenu/>
-                    <Route exact path="/" component={BitfinexContainer}/>
+                    <Route exact path="/" component={BinanceContainer}/>
                     <Route path="/dashboard" component={Dashboard}/>
                     <Route path="/home" component={Home}/>
-                    <Route path="/test" component={BitfinexTesting}/>
+                    <Route path="/bitfinex_test" component={BitfinexTesting}/>
+                    <Route path="/bitfinex" component={BitfinexContainer}/>
+                    <Route path="/binance_test" component={BinanceTesting}/>
+                    <Route path="/binance" component={BinanceContainer}/>
                 </div>
             </Router>
         )

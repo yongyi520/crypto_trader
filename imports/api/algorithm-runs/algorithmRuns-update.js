@@ -28,6 +28,11 @@ export const insertAlgorithmRun = function( data ){
     AlgorithmRuns.insert(data)
 }.future()
 
+export const editAlgorithmRun =  function( id, data ){
+    // console.log("calling edit algorithm run id: ", id, "data", data)
+    return AlgorithmRuns.update({_id: id}, {$set: data})
+}
+
 export const updateCompleteAlgorithmRunNoFiber = function(algorithmRunId){
     var match = AlgorithmRuns.findOne(algorithmRunId);
     if(match){

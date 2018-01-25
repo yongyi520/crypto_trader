@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-require('/imports/ui/components/debug/BitfinexTesting.sass')
+require('/imports/ui/components/debug/bitfinex/BitfinexTesting.sass')
 
 export default class BitfinexTesting extends Component {
 

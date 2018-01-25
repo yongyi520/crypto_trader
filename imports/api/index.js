@@ -10,3 +10,4 @@ import '/imports/api/system-logs'
 
 // exchanges
 import '/imports/api/bitfinex'
+import '/imports/api/binance'

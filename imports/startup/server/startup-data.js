@@ -9,6 +9,14 @@ var AlgorithmsStartupData = [
     {
         type: "SHBL",
         name: "martingale"
+    },
+    {
+        type: 'BLSH',
+        name: "set_orders"
+    },
+    {
+        type: 'SHBL',
+        name: 'set_orders'
     }
 ]
 

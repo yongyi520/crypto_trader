@@ -22,7 +22,8 @@ OrdersSchema = new SimpleSchema({
     },
     average_executed_price: {
       type: Number,
-        decimal: true
+        decimal: true,
+        optional: true
     },
     original_amount: {
         type: Number,
@@ -30,11 +31,13 @@ OrdersSchema = new SimpleSchema({
     },
     remaining_amount: {
         type: Number,
-        decimal: true
+        decimal: true,
+        optional: true
     },
     executed_amount: {
       type: Number,
-        decimal: true
+        decimal: true,
+        optional: true
     },
     status: {
         type: String
